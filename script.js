@@ -85,14 +85,12 @@ document.getElementById('trigger-install-modal').addEventListener('click', () =>
 async function startApp() {
     if (window.firebaseReady && window.fsDb) {
         try {
-            // جلب البيانات من فايربيس (السحابة) باستخدام مفتاح المدرسة
             const docRef = window.fsDoc(window.fsDb, "schools", APP_CONFIG.DB_KEY);
             const docSnap = await window.fsGetDoc(docRef);
             if (docSnap.exists()) {
-                db = docSnap.data(); // تحديث المتغير المحلي بالبيانات السحابية
+                db = docSnap.data(); 
                 localStorage.setItem(APP_CONFIG.DB_KEY, JSON.stringify(db));
             } else {
-                // في حال كانت المدرسة جديدة ولم تحفظ سحابياً بعد، نرفع البيانات الأساسية
                 await window.fsSetDoc(docRef, db);
             }
         } catch (e) {
@@ -116,12 +114,11 @@ window.onload = () => {
         startApp();
     } else {
         window.onFirebaseReady = startApp;
-        // مؤقت طوارئ في حال تأخر فايربيس في التحميل
         setTimeout(() => { if (!window.firebaseReady) startApp(); }, 3000);
     }
 };
 
-// دالة الحفظ المعدلة لتعمل محلياً وسحابياً دون إبطاء الواجهة
+// دالة الحفظ المعدلة
 function saveDB() { 
     localStorage.setItem(APP_CONFIG.DB_KEY, JSON.stringify(db)); 
     if (window.firebaseReady && window.fsDb) {
@@ -139,18 +136,33 @@ function saveSetup() {
         return;
     }
     
+    // حماية هيكل البيانات قبل الحفظ لتجنب التوقف
+    if (!db || typeof db !== 'object') db = {};
     db.schoolName = name.trim(); 
     db.schoolDate = date; 
-    saveDB(); 
-
-    document.getElementById('setup-modal').classList.remove('active');
-    document.getElementById('app').classList.remove('hidden');
     
-    initApp();
-    if(typeof Swal !== 'undefined') Swal.fire({toast:true, position:'top-end', icon:'success', title:'تم تسجيل الدخول بنجاح', showConfirmButton:false, timer:2000});
+    try {
+        initApp(); 
+        saveDB(); 
+        
+        document.getElementById('setup-modal').classList.remove('active');
+        document.getElementById('app').classList.remove('hidden');
+        
+        if(typeof Swal !== 'undefined') Swal.fire({toast:true, position:'top-end', icon:'success', title:'تم تسجيل الدخول بنجاح', showConfirmButton:false, timer:2000});
+    } catch (err) {
+        console.error("خطأ أثناء الدخول:", err);
+        alert("حدث خطأ يرجى تحديث الصفحة (Refresh).");
+    }
 }
 
 function initApp() {
+    // حماية الهيكل الأساسي
+    if(!db.classes) db.classes = [
+        { id: 1, name: 'الأول الابتدائي', sections: [{id: 11, name: 'أ'}, {id: 12, name: 'ب'}] },
+        { id: 2, name: 'الثاني الابتدائي', sections: [{id: 21, name: 'أ'}] }
+    ];
+    if(!db.regions) db.regions = [];
+    if(!db.students) db.students = [];
     if(!db.staff) db.staff = []; 
     if(!db.expenses) db.expenses = [];
     if(!db.settings) db.settings = { subjects: [...defaultSubjects], receiptCounter: 1000 };
@@ -241,7 +253,7 @@ function restoreBackup(event) {
             let importedDB = JSON.parse(e.target.result);
             if(importedDB && importedDB.students) {
                 db = importedDB;
-                saveDB(); // يتم المزامنة للسحابة تلقائياً
+                saveDB(); 
                 customAlert('تم استعادة النسخة الاحتياطية بنجاح!', 'success');
                 setTimeout(() => location.reload(), 1500);
             } else {
@@ -924,7 +936,6 @@ function printReceipt() {
     let generateHalf = (title) => `
     <div class="receipt-print-container" style="border: 2px solid #000; padding: 15px; margin-bottom: 5px; font-family: Arial, sans-serif; direction: rtl; width: 100%; box-sizing: border-box; page-break-inside: avoid; height: 48%;">
         
-        <!-- الرأس -->
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 5px; background: transparent; border: 2px solid #000;">
             <tr>
                 <td style="width: 15%; border: 2px solid #000; text-align: center; font-weight: bold; font-size: 14px;">
@@ -944,7 +955,6 @@ function printReceipt() {
             </tr>
         </table>
 
-        <!-- بيانات الطالب -->
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 5px; text-align: center; font-weight: bold; font-size: 14px; border: 2px solid #000;">
             <tr>
                 <td style="width: 40%; border: 2px solid #000; padding: 4px;">${s.name}</td>
@@ -955,7 +965,6 @@ function printReceipt() {
             </tr>
         </table>
 
-        <!-- جدول الإخوة -->
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 5px; text-align: center; font-weight: bold; font-size: 13px; border: 2px solid #000;">
             <tr>
                 <td style="width: 15%; border: 2px solid #000; background: rgba(0,0,0,0.05); padding: 3px;">الأخ الأول</td>
@@ -983,7 +992,6 @@ function printReceipt() {
             </tr>
         </table>
 
-        <!-- المالية -->
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 5px; text-align: center; font-weight: bold; font-size: 14px; border: 2px solid #000;">
             <tr style="background: rgba(0,0,0,0.05);">
                 <td style="border: 2px solid #000; padding: 4px;">المبلغ الكلي</td>
@@ -1003,7 +1011,6 @@ function printReceipt() {
             </tr>
         </table>
 
-        <!-- جدول الأقساط الـ 8 -->
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 5px; text-align: center; font-weight: bold; font-size: 13px; border: 2px solid #000;">
             <tr style="background: rgba(0,0,0,0.05);">
                 <td colspan="2" style="border: 2px solid #000; padding: 4px;">القسط الأول</td>
@@ -1048,7 +1055,6 @@ function printReceipt() {
         </div>
     </div>`;
 
-    // دمج النسختين في صفحة الطباعة مع ستايلات خاصة بالطباعة للون الأزرق المائي
     let html = `
     <style>
         @media print {
