@@ -59,7 +59,6 @@ function customPrompt(msg, cb) {
 
 // ============ 3. التشغيل السحابي والدخول السريع ومحرك PWA ============
 
-// كود تثبيت PWA
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
@@ -81,7 +80,6 @@ document.getElementById('trigger-install-modal').addEventListener('click', () =>
     showModal('pwa-install-modal');
 });
 
-// آلية الربط السحابي الحقيقي مع فايربيس قبل فتح النظام
 async function startApp() {
     if (window.firebaseReady && window.fsDb) {
         try {
@@ -108,7 +106,6 @@ async function startApp() {
     }
 }
 
-// تشغيل النظام
 window.onload = () => {
     if (window.firebaseReady) {
         startApp();
@@ -118,7 +115,6 @@ window.onload = () => {
     }
 };
 
-// دالة الحفظ المعدلة
 function saveDB() { 
     localStorage.setItem(APP_CONFIG.DB_KEY, JSON.stringify(db)); 
     if (window.firebaseReady && window.fsDb) {
@@ -136,7 +132,6 @@ function saveSetup() {
         return;
     }
     
-    // حماية هيكل البيانات قبل الحفظ لتجنب التوقف
     if (!db || typeof db !== 'object') db = {};
     db.schoolName = name.trim(); 
     db.schoolDate = date; 
@@ -156,7 +151,6 @@ function saveSetup() {
 }
 
 function initApp() {
-    // حماية الهيكل الأساسي
     if(!db.classes) db.classes = [
         { id: 1, name: 'الأول الابتدائي', sections: [{id: 11, name: 'أ'}, {id: 12, name: 'ب'}] },
         { id: 2, name: 'الثاني الابتدائي', sections: [{id: 21, name: 'أ'}] }
@@ -169,7 +163,6 @@ function initApp() {
     if(!db.settings.receiptCounter) db.settings.receiptCounter = 1000;
     if(!db.recycleBin) db.recycleBin = [];
 
-    // تنظيف سلة المحذوفات (حذف نهائي بعد 15 يوم)
     let now = Date.now();
     db.recycleBin = db.recycleBin.filter(s => {
         let diffDays = (now - (s.deletedAt || now)) / (1000 * 3600 * 24);
@@ -222,7 +215,6 @@ function applyTheme(theme) { document.body.classList.toggle('dark-mode', theme =
 function showModal(id) { document.getElementById(id).classList.add('active'); }
 function hideModal(id) { document.getElementById(id).classList.remove('active'); }
 
-// اختصارات لوحة المفاتيح
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         document.querySelectorAll('.modal.active').forEach(m => m.classList.remove('active'));
@@ -236,7 +228,6 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// إدارة النسخ الاحتياطية
 function downloadBackup() {
     let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
     let dlAnchorElem = document.createElement('a');
@@ -266,7 +257,6 @@ function restoreBackup(event) {
     reader.readAsText(file);
 }
 
-// ============ 4. الإعدادات (الصفوف والمناطق والمواد الديناميكية) ============
 function addClass() { let n=document.getElementById('new-class-name').value; if(!n)return; db.classes.push({id:Date.now(), name:n, sections:[]}); saveDB(); document.getElementById('new-class-name').value=''; initApp(); }
 function deleteClass(id) { customConfirm('تأكيد حذف الصف بكافة شعبه؟', r=>{ if(r){db.classes=db.classes.filter(c=>c.id!==id); saveDB(); initApp();}}); }
 function addSection(id) { customPrompt("اكتب اسم الشعبة الجديدة:", n=>{ if(n){db.classes.find(c=>c.id===id).sections.push({id:Date.now(),name:n}); saveDB(); initApp();}});}
@@ -300,7 +290,6 @@ function renderSubjects() {
     document.getElementById('subjects-list').innerHTML = db.settings.subjects.map((sub, idx) => `<div class="list-item flex-between"><span><i class="fas fa-book-open text-primary"></i> ${sub}</span><button type="button" class="btn-3d danger btn-small m-0" onclick="deleteSubject(${idx})"><i class="fas fa-trash"></i></button></div>`).join('');
 }
 
-// ============ 5. بيانات الطلاب الأساسية ============
 function populateClassSelects() { 
     let opts = '<option value="">اختر الصف</option>'+db.classes.map(c=>`<option value="${c.id}">${c.name}</option>`).join(''); 
     ['std-class','sib-class','rep-class','prom-class'].forEach(id=>{ if(document.getElementById(id)) document.getElementById(id).innerHTML=opts; }); 
@@ -489,7 +478,6 @@ function deleteStudent(id) {
     }); 
 }
 
-// ============ إدارة سلة المحذوفات ============
 function renderRecycleBin() {
     if(!db.recycleBin) db.recycleBin = [];
     document.getElementById('recycle-bin-list').innerHTML = db.recycleBin.map((s, i) => `
@@ -528,7 +516,6 @@ function restoreAllRecycleBin() {
     });
 }
 
-// ============ 6. ملف الطالب المالي والدرجات ============
 function openProfile(id) {
     currentStudentId=id; let s=db.students.find(x=>x.id===id); let c=db.classes.find(x=>x.id==s.classId), sec=c?c.sections.find(x=>x.id==s.sectionId):null;
     document.getElementById('prof-name').innerText=s.name; document.getElementById('prof-details').innerText=`الصف: ${c?c.name:'-'} | الشعبة: ${sec?sec.name:'-'} | موبايل: ${s.phone||'-'}`; 
@@ -618,7 +605,6 @@ function calcRow(i) { let get=id=>{let v=parseFloat(document.getElementById(id).
 function calcCols() { let cols=['m11','m12','m13','avg1','mid','m21','m22','m23','avg2','year','final','tot']; let subCount=db.settings.subjects.length; let vC=Array.from({length:subCount}).filter((_,i)=>document.getElementById(`g_sub_${i}`).value.trim()!=='').length||1; cols.forEach(c=>{ let sum=0, cnt=0; for(let i=0;i<subCount;i++){let v=parseFloat(document.getElementById(`g_${i}_${c}`).value); if(!isNaN(v)){sum+=v;cnt++;}} document.getElementById(`g_tot_${c}`).value=cnt>0?Math.round(sum):''; document.getElementById(`g_avg_${c}`).value=cnt>0?(sum/vC).toFixed(1).replace(/\.0$/,''):''; }); }
 function saveGrades() { let s=db.students.find(x=>x.id===currentStudentId); s.grades.subNames=[]; let subCount=db.settings.subjects.length; for(let i=0;i<subCount;i++){ s.grades.subNames.push(document.getElementById(`g_sub_${i}`).value); s.grades[i]={m11:document.getElementById(`g_${i}_m11`).value, m12:document.getElementById(`g_${i}_m12`).value, m13:document.getElementById(`g_${i}_m13`).value, avg1:document.getElementById(`g_${i}_avg1`).value, mid:document.getElementById(`g_${i}_mid`).value, m21:document.getElementById(`g_${i}_m21`).value, m22:document.getElementById(`g_${i}_m22`).value, m23:document.getElementById(`g_${i}_m23`).value, avg2:document.getElementById(`g_${i}_avg2`).value, year:document.getElementById(`g_${i}_year`).value, final:document.getElementById(`g_${i}_final`).value, tot:document.getElementById(`g_${i}_tot`).value}; } s.grades['footer']=document.getElementById('g_footer').value; saveDB(); if(typeof Swal !== 'undefined') Swal.fire({toast:true,position:'top-end',icon:'success',title:'تم حفظ الدرجات',showConfirmButton:false,timer:1500}); }
 
-// ============ 7. الرواتب والموظفين ============
 function openAddStaffModal() { editingStaffId=null; document.getElementById('staff-modal-title').innerHTML='<i class="fas fa-user-plus"></i> إضافة موظف'; ['staff-name','staff-role','staff-salary'].forEach(id=>document.getElementById(id).value=''); showModal('add-staff-modal'); }
 function saveStaff() { let n=document.getElementById('staff-name').value, r=document.getElementById('staff-role').value, s=parseFloat(document.getElementById('staff-salary').value)||0; if(!n||s<=0) return customAlert('يرجى إدخال الاسم والراتب بشكل صحيح', 'error'); if(editingStaffId){ let idx=db.staff.findIndex(x=>x.id===editingStaffId); db.staff[idx].name=n; db.staff[idx].role=r; db.staff[idx].salary=s; } else { db.staff.push({ id:Date.now(), name:n, role:r, salary:s, isTeacher:false, payments:[] }); } saveDB(); hideModal('add-staff-modal'); renderStaff(); renderDual(); if(typeof Swal !== 'undefined') Swal.fire({toast:true, position:'top-end', icon:'success', title:'تم الحفظ', showConfirmButton:false, timer:1500}); }
 function editStaff(id) { editingStaffId=id; let s=db.staff.find(x=>x.id===id); document.getElementById('staff-modal-title').innerHTML='<i class="fas fa-edit"></i> تعديل موظف'; document.getElementById('staff-name').value=s.name; document.getElementById('staff-role').value=s.role; document.getElementById('staff-salary').value=s.salary; showModal('add-staff-modal'); }
@@ -685,13 +671,11 @@ function renderStaff() {
     }).join('') || '<div class="text-center mt-3">لا توجد بيانات</div>'; 
 }
 
-// ============ 8. المصروفات التشغيلية ============
 function openAddExpenseModal() { document.getElementById('exp-desc').value=''; document.getElementById('exp-amount').value=''; document.getElementById('exp-date').value = todayISO; showModal('add-expense-modal'); }
 function saveExpense() { let d=document.getElementById('exp-desc').value, a=parseFloat(document.getElementById('exp-amount').value)||0, dt=document.getElementById('exp-date').value; if(!d||a<=0) return customAlert('البيان والمبلغ مطلوبان', 'error'); db.expenses.push({id:Date.now(), desc:d, amount:a, date:dt}); saveDB(); hideModal('add-expense-modal'); renderExpenses(); renderDual(); renderDaily(); if(typeof Swal !== 'undefined') Swal.fire({toast:true, position:'top-end', icon:'success', title:'تم حفظ المصروف', showConfirmButton:false, timer:1500}); }
 function deleteExpense(id) { customConfirm("حذف هذا المصروف؟", r=>{ if(r){db.expenses=db.expenses.filter(x=>x.id!==id); saveDB(); renderExpenses(); renderDual(); renderDaily();} }); }
 function renderExpenses() { document.getElementById('expenses-list').innerHTML = db.expenses.map(e => `<div class="list-item flex-between"><div><strong><i class="fas fa-minus-circle text-danger"></i> ${e.desc}</strong><br><small><i class="far fa-calendar"></i> ${e.date}</small></div><div class="flex-row"><b style="color:#e74c3c; font-size:16px;">${e.amount.toLocaleString()}</b> <button type="button" class="btn-3d danger btn-small m-0" onclick="deleteExpense(${e.id})"><i class="fas fa-trash"></i></button></div></div>`).join(''); }
 
-// ============ 9. الخلاصة اليومية والمركز المالي ============
 function renderDaily() {
     let dVal = document.getElementById('daily-date-filter').value;
     let parts = dVal.split('-'); let dStrGB = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : ''; 
@@ -738,7 +722,6 @@ function calcDifference() {
     diffEl.style.color = diff === 0 ? '#2ecc71' : '#e74c3c';
 }
 
-// ============ 10. إحصائيات النظام ============
 function renderStatistics() {
     if(!document.getElementById('tab-statistics')) return; 
     let totalStudents = 0; let totalSections = 0; let classStats = {};
@@ -788,7 +771,6 @@ function renderStatistics() {
     document.getElementById('statistics-list').innerHTML = html || '<div class="text-center">لا توجد صفوف</div>';
 }
 
-// ============ 11. التقارير والطباعة ============
 function generateReport() { 
     let cId=document.getElementById('rep-class').value, sId=document.getElementById('rep-section').value; 
     if(!cId||!sId){document.getElementById('report-list').innerHTML='';return;} 
@@ -919,22 +901,19 @@ function printReceipt() {
     let totTuition = s.tuition + (s.siblings||[]).reduce((a,b)=>a+(b.fee||0),0);
     let p = s.payments.reduce((a, b) => a + b.amount, 0);
     
-    // الحسابات المالية الدقيقة للوصل الجديد
     let installment = totTuition / 8;
     let paidCount = s.payments.length;
     let latestRecNo = paidCount > 0 ? (s.payments[paidCount-1].receiptNo || '----') : '----';
     let curYear = db.schoolDate || new Date().getFullYear();
 
-    // جلب الإخوة (بحد أقصى 4 كما في التصميم)
     let sibs = s.siblings || [];
     let b1 = sibs[0] || {}; let c1 = db.classes.find(x=>x.id==b1.classId);
     let b2 = sibs[1] || {}; let c2 = db.classes.find(x=>x.id==b2.classId);
     let b3 = sibs[2] || {}; let c3 = db.classes.find(x=>x.id==b3.classId);
     let b4 = sibs[3] || {}; let c4 = db.classes.find(x=>x.id==b4.classId);
 
-    // دالة لتوليد هيكل الوصل الواحد
     let generateHalf = (title) => `
-    <div class="receipt-print-container" style="border: 2px solid #000; padding: 15px; margin-bottom: 5px; font-family: Arial, sans-serif; direction: rtl; width: 100%; box-sizing: border-box; page-break-inside: avoid; height: 48%;">
+    <div class="receipt-print-container" style="border: 2px solid #000; padding: 15px; margin-bottom: 5px; font-family: Arial, sans-serif; direction: rtl; width: 100%; min-width: 750px; box-sizing: border-box; page-break-inside: avoid; height: 48%;">
         
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 5px; background: transparent; border: 2px solid #000;">
             <tr>
@@ -1055,15 +1034,9 @@ function printReceipt() {
         </div>
     </div>`;
 
+    // لا يوجد كود <style> هنا بعد الآن! لقد تم نقله لملف style.css
     let html = `
-    <style>
-        @media print {
-            @page { size: A4 portrait; margin: 10mm; }
-            body, #print-area { background: #fff !important; }
-            .receipt-print-container { background-color: #e0f2fe !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        }
-    </style>
-    <div style="display:flex; flex-direction:column; height:98vh; justify-content:space-between; box-sizing: border-box;">
+    <div style="display:flex; flex-direction:column; height:98vh; min-height: 1000px; justify-content:space-between; box-sizing: border-box; min-width: 800px; background: #fff;">
         ${generateHalf('نسخة المدرسة')}
         <div style="border-top:2px dashed #000; width:100%; margin: 5px 0;"></div>
         ${generateHalf('نسخة الطالب')}
