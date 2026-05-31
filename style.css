@@ -136,12 +136,36 @@ body.dark-mode .nav-btn.active { color: #a29bfe; }
 .bg-blue { background: #1a4d94 !important; color: #fff; }
 .bg-light { background: #ecf0f1; }
 
+/* إعدادات الطباعة المتقدمة لمعالجة أخطاء الموبايل */
 #print-area { display: none; }
 @media print {
+    @page { size: A4 portrait; margin: 10mm; }
     body > *:not(#print-area) { display: none !important; }
-    #print-area, #print-area * { display: block; visibility: visible; color:#000 !important; }
-    #print-area { display: block !important; position: absolute; left: 0; top: 0; width: 100%; direction: rtl; }
-    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    
+    #print-area { 
+        display: block !important; 
+        position: absolute; 
+        left: 0; top: 0; 
+        width: 100%; 
+        direction: rtl; 
+        background: #fff !important; 
+        /* إجبار الموبايل على عرض الورقة بعرض ثابت لعدم تكسير الجداول */
+        min-width: 800px !important; 
+    }
+    
+    #print-area * { 
+        visibility: visible; 
+        color:#000 !important; 
+    }
+    
+    * { 
+        -webkit-print-color-adjust: exact !important; 
+        print-color-adjust: exact !important; 
+    }
+
+    .receipt-print-container { 
+        background-color: #e0f2fe !important; 
+    }
 }
 
 #add-student-modal .modal-content,
