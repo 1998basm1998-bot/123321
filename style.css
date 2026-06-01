@@ -177,8 +177,10 @@ body.dark-mode .nav-btn.active { color: #a29bfe; }
 #prof-details { margin-top: 2px !important; font-size: 12px !important; }
 #prof-name { font-size: 18px !important; margin-bottom: 0 !important; }
 
+/* إعدادات الطباعة المخصصة لمعالجة الوصل بنظام A5 والورق المقطوع */
 #print-area { display: none; }
 @media print {
+    /* تم توجيه الطابعة لورق A5 أفقي لسحب الورق المقطوع بشكل صحيح */
     @page { size: A5 landscape; margin: 5mm; }
     body > *:not(#print-area) { display: none !important; }
     
@@ -204,6 +206,8 @@ body.dark-mode .nav-btn.active { color: #a29bfe; }
     .receipt-print-container { 
         background-color: #e0f2fe !important; 
         margin: 0 auto !important; 
-        display: block !important;
+        display: flex !important;
+        flex-direction: column;
+        justify-content: center;
     }
 }
