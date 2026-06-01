@@ -11,6 +11,35 @@ let todayISO = dObj.getFullYear() + '-' + String(dObj.getMonth() + 1).padStart(2
 
 const defaultSubjects = ['العربي','الرياضيات','الإنكليزي','الإسلامية','الكيمياء','الفيزياء','الاحياء','الفنية','الرياضة'];
 
+if (!db || typeof db !== 'object') {
+    db = {
+        schoolName: '', schoolDate: '', theme: 'light',
+        settings: { subjects: [...defaultSubjects], receiptCounter: 1000 },
+        classes: [
+            { id: 1, name: 'الأول الابتدائي', sections: [{id: 11, name: 'أ'}, {id: 12, name: 'ب'}] },
+            { id: 2, name: 'الثاني الابتدائي', sections: [{id: 21, name: 'أ'}] }
+        ],
+        regions: [
+            { id: 1, name: 'حي الزهور', driver: 'أحمد علي', phone: '07701234567', code: '101' },
+            { id: 2, name: 'حي المعلمين', driver: 'محمد جاسم', phone: '07801234567', code: '102' }
+        ],
+        students: [
+            { id: 1001, classId: 1, sectionId: 11, regId: '1055', name: 'علي حسين كاظم', phone: '0771111111', notes: '', socialStatus: '', tuition: 1500000, regionCode: '101', payments: [{amount: 500000, date: todayISO, receiptNo: 999}], grades: {}, siblings: [
+                { regId: '1056', name: 'محمد حسين كاظم', classId: 2, sectionId: 21, fee: 1000000 }
+            ]}
+        ],
+        staff: [
+            { id: 1, name: 'ياسر محمود', role: 'مدرس لغة عربية', isTeacher: true, hiringYear: 2020, salary: 0, payments: [{amount: 150000, date: todayISO}] },
+            { id: 2, name: 'سمير عباس', role: 'مدير', isTeacher: false, salary: 800000, payments: [] }
+        ],
+        expenses: [
+            { id: 1, desc: 'صيانة وتصليح', amount: 50000, date: todayISO }
+        ],
+        recycleBin: []
+    };
+    localStorage.setItem(APP_CONFIG.DB_KEY, JSON.stringify(db));
+}
+
 let currentStudentId = null, editingStudentId = null, tempSiblings = [], editingStaffId = null, currentTeacherId = null;
 let editingDirectSibMainId = null, editingDirectSibIdx = null, editingTempSibIdx = null;
 
@@ -29,6 +58,7 @@ function customPrompt(msg, cb) {
 }
 
 // ============ 3. التشغيل السحابي والدخول السريع ومحرك PWA ============
+
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
@@ -59,28 +89,11 @@ async function startApp() {
                 db = docSnap.data(); 
                 localStorage.setItem(APP_CONFIG.DB_KEY, JSON.stringify(db));
             } else {
-                if(!db || typeof db !== 'object') {
-                   db = {
-                        schoolName: '', schoolDate: '', theme: 'light',
-                        settings: { subjects: [...defaultSubjects], receiptCounter: 1000 },
-                        classes: [{ id: 1, name: 'الأول الابتدائي', sections: [{id: 11, name: 'أ'}, {id: 12, name: 'ب'}] }],
-                        regions: [], students: [], staff: [], expenses: [], recycleBin: []
-                    };
-                }
                 await window.fsSetDoc(docRef, db);
             }
         } catch (e) {
             console.error("حدث خطأ في الاتصال بالسحابة، سيتم العمل على النسخة المحلية:", e);
         }
-    }
-    
-    if(!db || typeof db !== 'object') {
-       db = {
-            schoolName: '', schoolDate: '', theme: 'light',
-            settings: { subjects: [...defaultSubjects], receiptCounter: 1000 },
-            classes: [{ id: 1, name: 'الأول الابتدائي', sections: [{id: 11, name: 'أ'}] }],
-            regions: [], students: [], staff: [], expenses: [], recycleBin: []
-        };
     }
     
     applyTheme(db.theme);
@@ -505,7 +518,6 @@ function restoreAllRecycleBin() {
     });
 }
 
-// ============ 6. ملف الطالب المالي والدرجات ============
 function openProfile(id) {
     currentStudentId=id; let s=db.students.find(x=>x.id===id); let c=db.classes.find(x=>x.id==s.classId), sec=c?c.sections.find(x=>x.id==s.sectionId):null;
     document.getElementById('prof-name').innerText=s.name; document.getElementById('prof-details').innerText=`الصف: ${c?c.name:'-'} | الشعبة: ${sec?sec.name:'-'} | موبايل: ${s.phone||'-'}`; 
@@ -908,7 +920,7 @@ function printReceipt() {
     let b4 = sibs[3] || {}; let c4 = db.classes.find(x=>x.id==b4.classId);
 
     let generateHalf = (title) => `
-    <div class="receipt-print-container" style="border: 2px solid #000; padding: 10px; font-family: Arial, sans-serif; direction: rtl; width: 95%; box-sizing: border-box; page-break-inside: avoid; height: 48%; display: flex; flex-direction: column; justify-content: center; margin: 5px auto;">
+    <div class="receipt-print-container" style="border: 2px solid #000; padding: 15px; font-family: Arial, sans-serif; direction: rtl; width: 100%; box-sizing: border-box; page-break-inside: avoid; height: 95vh; display: flex; flex-direction: column; justify-content: center; margin: 0 auto;">
         
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 5px; background: transparent; border: 2px solid #000;">
             <tr>
@@ -1032,15 +1044,19 @@ function printReceipt() {
     let html = `
     <style>
         @media print {
-            @page { size: A4 portrait; margin: 5mm; }
+            @page { size: A5 landscape; margin: 5mm; }
             body, #print-area { background: #fff !important; }
             .receipt-print-container { background-color: #e0f2fe !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .page-break { page-break-after: always; break-after: page; }
         }
     </style>
-    <div style="display:flex; flex-direction:column; align-items:center; height:100vh; width:100%; box-sizing: border-box; min-width: 800px; background: #fff;">
-        ${generateHalf('نسخة المدرسة')}
-        <div style="border-top:2px dashed #000; width:90%; margin: 10px 0;"></div>
-        ${generateHalf('نسخة الطالب')}
+    <div style="width:100%; box-sizing: border-box; margin: 0 auto; background: #fff;">
+        <div class="page-break">
+            ${generateHalf('نسخة المدرسة')}
+        </div>
+        <div>
+            ${generateHalf('نسخة الطالب')}
+        </div>
     </div>`;
 
     document.getElementById('print-area').innerHTML = html;
